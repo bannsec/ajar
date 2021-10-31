@@ -1,0 +1,6 @@
+*.swp
+*.pyc
+ajar.egg-info/
+dist/
+coverage/
+docs/_build/
