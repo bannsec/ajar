@@ -40,6 +40,7 @@ def prechecks():
     # Check if stockfish path is set
     if config['stockfish_path'] is None:
         # If not, prompt user to set it
+        print("An engine (such as stockfish) is required for ajar. You can download it for free here: https://stockfishchess.org/download/")
         config['stockfish_path'] = input('Please enter the path to your stockfish executable: ')
         save()
 

@@ -44,6 +44,10 @@ def get_lichess_stats(fen):
     
     return json.loads(r.content)
 
+def clean_fen(fen):
+    # Removes half step and full step counters from the fen
+    return " ".join(fen.split(" ")[:-2])
+
 def parse_args():
     global LICHESS_STATS_PARAMETERS
     cores = multiprocessing.cpu_count()
@@ -96,21 +100,39 @@ def run(game, stockfish, my_turn, previous_score=None):
                     run(game.add_variation(chess.Move.from_uci(move["uci"])), stockfish, not my_turn, previous_score=previous_score)
 
     else:
-        # Ask stockfish
-        eval = stockfish.analyse(game.board(), chess.engine.Limit(depth=args.depth))
-        print("evalulating ... ", flush=True, end="")
-        print(eval['score'].relative.score(mate_score=100000) / 100)
-        print("---------------\n")
-        game.set_eval(eval['score'], args.depth)
+        # Check if move is in the database
+        top_move = db.get_top_move(clean_fen(game.board().fen()), args.depth)
+        if top_move:
+            pv = chess.Move.from_uci(top_move.move)
+            score = chess.engine.PovScore(chess.engine.Cp(top_move.eval), True if game.board().fen().split()[1] == "w" else False)
+            print("Using previous evaluation")
+            print(f"{score.relative.score(mate_score=100000) / 100}")
+            print("---------------\n")
+
+        else:
+            # Ask stockfish
+            eval = stockfish.analyse(game.board(), chess.engine.Limit(depth=args.depth))
+            score = eval['score']
+            print("evalulating ... ", flush=True, end="")
+            relative_score = score.relative.score(mate_score=100000) / 100
+            print(relative_score)
+            print("---------------\n")
+            pv = eval['pv'][0]
+
+            # TODO: Validate that analysis didn't time out
+            # Save this move
+            db.save_move(fen=clean_fen(game.board().fen()), move=pv.uci(), eval=score.relative.score(mate_score=100000), depth=args.depth)
 
         if game.parent and previous_score:
-            if eval['score'].relative.score(mate_score=100000) - previous_score.relative.score(mate_score=100000) > 200:
+            if score.relative.score(mate_score=100000) - previous_score.relative.score(mate_score=100000) > 200:
                 game.comment = "Blunder"
-            elif eval['score'].relative.score(mate_score=100000) - previous_score.relative.score(mate_score=100000) > 100:
+            elif score.relative.score(mate_score=100000) - previous_score.relative.score(mate_score=100000) > 100:
                 game.comment = "Inaccurate"
 
+        game.set_eval(score, args.depth)
+
         #run(game.add_variation(chess.Move.from_uci(stockfish.get_best_move())), stockfish, not my_turn)
-        run(game.add_variation(eval['pv'][0]), stockfish, not my_turn, previous_score=eval['score'])
+        run(game.add_variation(pv), stockfish, not my_turn, previous_score=score)
 
     return game
 

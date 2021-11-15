@@ -10,8 +10,8 @@ from .config import app_dirs
 # Columns:
 #   id: int (primary key)
 #   fen: string (FEN notation)
-#   move: string (move in algebraic notation)
-#   eval: double (evaluation of the move)
+#   move: string (move in uci notation)
+#   eval: int (evaluation of the move in CentiPawns)
 #   depth: int (depth of the analysis)
 # (fen, move, depth) are unique together
 class Move(sqlalchemy.ext.declarative.declarative_base()):
@@ -19,7 +19,7 @@ class Move(sqlalchemy.ext.declarative.declarative_base()):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     fen = sqlalchemy.Column(sqlalchemy.String)
     move = sqlalchemy.Column(sqlalchemy.String)
-    eval = sqlalchemy.Column(sqlalchemy.Float)
+    eval = sqlalchemy.Column(sqlalchemy.Integer)
     depth = sqlalchemy.Column(sqlalchemy.Integer)
     __table_args__ = (sqlalchemy.UniqueConstraint('fen', 'move', 'depth'),)
 
@@ -44,16 +44,30 @@ def get_all_moves(fen, depth, or_greater=True):
         # Find all moves with a depth exactly equal to the given depth
         moves = session.query(Move).filter(Move.fen == fen).filter(Move.depth == depth).order_by(Move.eval.desc()).all()
 
+    # If we're black, reverse the order
+    if fen.split()[1] == "b":
+        moves = moves[::-1]
+
     return moves
 
 def get_top_move(fen, depth):
     # Get the top move for a given fen and depth
     moves = get_all_moves(fen, depth)
-    if len(moves) > 0:
-        return moves[0]
-    else:
+    
+    if moves == []:
         return None
 
+    # Find max depth for any move in the list
+    max_depth = max([move.depth for move in moves])
+
+    # Filter out moves with a depth less than the max depth
+    moves = [move for move in moves if move.depth == max_depth]
+
+    # Sort by eval
+    moves = sorted(moves, key=lambda move: move.eval, reverse=False if fen.split()[1] == "b" else True)
+
+    return moves[0]
+    
 def remove_moves_fen_depth(fen, depth):
     # Remove all moves for a given fen and depth
     session.query(Move).filter(Move.fen == fen).filter(Move.depth == depth).delete()
