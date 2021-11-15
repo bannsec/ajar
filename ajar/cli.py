@@ -11,6 +11,9 @@ import IPython
 from chess import pgn
 import chess
 
+from . import db
+from .config import config
+
 BASE_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 DEFAULT_DEPTH = 24
 DEFAULT_MINIMUM_GAMES = 100
@@ -26,8 +29,6 @@ LICHESS_STATS_PARAMETERS = {
     "speeds[]": ["classical", "rapid", "blitz"],
     "ratings[]": ["1600", "1800", "2000", "2200", "2500"],
 }
-
-STOCKFISH_PATH = "/home/user/stockfish_14_linux_x64_avx2/stockfish_14_x64_avx2"
 
 def get_lichess_stats(fen):
     LICHESS_STATS_PARAMETERS["fen"] = fen
@@ -118,7 +119,7 @@ def main():
     args = parse_args()
     #stockfish = Stockfish("/home/user/stockfish_14_linux_x64_avx2/stockfish_14_x64_avx2", parameters={"Threads": args.cores})
     #stockfish.set_depth(args.depth)
-    stockfish = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    stockfish = chess.engine.SimpleEngine.popen_uci(config['stockfish_path'])
     stockfish.configure({"Threads": args.cores})
 
     game = pgn.Game()

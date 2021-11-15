@@ -4,6 +4,7 @@ import atexit
 import sqlalchemy.ext.declarative, sqlalchemy.orm, sqlalchemy
 import appdirs
 
+from .config import app_dirs
 
 # Create a sqlalchemy table as a class
 # Columns:
@@ -64,13 +65,9 @@ def remove_moves_fen(fen):
     session.commit()
 
 
-# Create appdirs object
-app_dirs = appdirs.AppDirs('ajar', 'bannsec')
 
 DBNAME = "moves.db"
 DBFULLPATH = os.path.join(app_dirs.user_data_dir, DBNAME)
-
-os.makedirs(app_dirs.user_data_dir, exist_ok=True)
 
 # Create sqlalchemy engine
 engine = sqlalchemy.create_engine("sqlite:///{}".format(DBFULLPATH))
