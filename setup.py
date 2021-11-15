@@ -30,7 +30,7 @@ setup(
     ],
     keywords='chess stockfish opening generator',
     packages=find_packages(exclude=['contrib', 'docs', 'tests', 'dist']),
-    install_requires=['chess', 'requests'],
+    install_requires=['chess', 'requests', 'sqlalchemy', 'appdirs'],
     extras_require={
         'dev': ['ipython','twine','pytest','python-coveralls','coverage','pytest-cov','pytest-xdist','sphinxcontrib-napoleon', 'sphinx_rtd_theme','sphinx-autodoc-typehints', 'pyOpenSSL'],
     },
